@@ -1,8 +1,13 @@
 <resources>
-    <string name="app_name">androidbits</string>
+    <string name="app_name">AndroidBits by Santhosh</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_settings">Settings</string>
+    <string name="hello">Hello</string>
+    <string name="upload_video">Upload Video</string>
+    <string name="chart_activity">Chart Activity</string>
+    <string name="circle_activity">Circle Activity</string>
+    <string name="reset_button">Reset</string>
 </resources>
