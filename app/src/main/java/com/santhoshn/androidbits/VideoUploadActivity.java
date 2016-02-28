@@ -1,12 +1,15 @@
 package com.santhoshn.androidbits;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -39,7 +42,7 @@ public class VideoUploadActivity extends AppCompatActivity {
     Button uploadBtn;
     TextView tv = null;
     private static final int SELECT_VIDEO = 1;
-    private static final String VIDEO_UPLOAD_URL = "https://0ef378b0.ngrok.io/upload/video";
+    private static final String VIDEO_UPLOAD_URL = "https://2434663f.ngrok.io/upload/video";
     String mimeType;
     DataOutputStream dos = null;
     String lineEnd = "\r\n";
@@ -49,35 +52,31 @@ public class VideoUploadActivity extends AppCompatActivity {
     byte[] buffer;
     int maxBufferSize = 50 * 1024 * 1024;
 
-    private EditText title;
-    private EditText channel;
-    private EditText context_type;
-    private EditText context_resource_id;
-    private EditText isPublic;
-    private EditText isUserVideo;
+    //private EditText title;
+    private EditText uploadLink;
+    ProgressDialog progressDialog;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_video_upload);
+        tv = (TextView) findViewById(R.id.tv);
+        //title = (EditText) findViewById(R.id.title);
+        uploadLink = (EditText) findViewById(R.id.uploadlink);
         uploadBtn = (Button) findViewById(R.id.upload);
-
         uploadBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setType("video/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);//
-                startActivityForResult(Intent.createChooser(intent, "Select Video"), SELECT_VIDEO);
+                if (uploadLink != null && !TextUtils.isEmpty(uploadLink.getText().toString())) {
+                    Intent intent = new Intent();
+                    intent.setType("video/*");
+                    intent.setAction(Intent.ACTION_GET_CONTENT);//
+                    startActivityForResult(Intent.createChooser(intent, "Select Video"), SELECT_VIDEO);
+                }
+
             }
         });
-        tv = (TextView) findViewById(R.id.tv);
-        title = (EditText) findViewById(R.id.title);
-        channel = (EditText) findViewById(R.id.channel);
-        context_type = (EditText) findViewById(R.id.context_type);
-        context_resource_id = (EditText) findViewById(R.id.context_resource_id);
-        isPublic = (EditText) findViewById(R.id.isPublic);
-        isUserVideo = (EditText) findViewById(R.id.isUserVideo);
+
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -100,18 +99,21 @@ public class VideoUploadActivity extends AppCompatActivity {
     }
 
     private void doFileUpload(Uri uri) {
+        progressDialog = ProgressDialog.show(this, "Progress", "Uploading...");
+        progressDialog.setCancelable(false);
         VideoParams params = new VideoParams();
-        params.setChannel(channel.getText().toString());
-        params.setContextResourceId(context_resource_id.getText().toString());
-        params.setTitle(title.getText().toString());
-        params.setContextType(context_type.getText().toString());
+        //params.setChannel(channel.getText().toString());
+        //params.setContextResourceId(context_resource_id.getText().toString());
+        //params.setTitle(title.getText().toString());
+        //params.setContextType(context_type.getText().toString());
         params.setUri(uri);
-        params.setIsPublicVideo(Integer.parseInt(isPublic.getText().toString()));
-        params.setIsUserVideo(Integer.parseInt(isUserVideo.getText().toString()));
+        params.setUploadUrl(uploadLink.getText().toString());
+        //params.setIsPublicVideo(Integer.parseInt(isPublic.getText().toString()));
+        //params.setIsUserVideo(Integer.parseInt(isUserVideo.getText().toString()));
 
-        uploadVideo(params);
-//        UploadVideoAsyncTask asyncTask = new UploadVideoAsyncTask();
-//        asyncTask.execute(params);
+        //uploadVideo(params);
+        UploadVideoAsyncTask asyncTask = new UploadVideoAsyncTask();
+        asyncTask.execute(params);
     }
 
     private String getPath(Uri uri) {
@@ -138,14 +140,9 @@ public class VideoUploadActivity extends AppCompatActivity {
                 return;
             }
             params.put("file", convertFileToStream(videoParams.getUri()));
-            params.put("title", videoParams.getTitle());
+            //params.put("title", videoParams.getTitle());
             params.put("duration", "15");
             params.put("orientation", "portrait");
-            params.put("channel", videoParams.getChannel());
-            params.put("context_type", videoParams.getContextType());
-            params.put("context_resource_id", videoParams.getContextResourceId());
-            params.put("isPublic", Integer.toString(videoParams.getIsPublicVideo()));
-            params.put("isUserVideo", Integer.toString(videoParams.getIsUserVideo()));
 
             VolleyRequestHandler.getInstance(this).post(VIDEO_UPLOAD_URL, params, new ResponseHandler() {
                 @Override
@@ -209,7 +206,7 @@ public class VideoUploadActivity extends AppCompatActivity {
                 InputStream iptStream = getContentResolver().openInputStream(videoParams.getUri());
 
 
-                URL url = new URL(VIDEO_UPLOAD_URL);
+                URL url = new URL(videoParams.getUploadUrl());
 
                 conn = (HttpURLConnection) url.openConnection();
 
@@ -225,12 +222,11 @@ public class VideoUploadActivity extends AppCompatActivity {
                 conn.setRequestMethod("POST");
 
                 conn.setRequestProperty("Connection", "Keep-Alive");
-                //conn.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6OCwidXNlcklkIjoiel84MDU4NTI5MyJ9.kW9xKW5q2XgAzRDT_6cj3VxlEpn4tNGCUIYCRRq0YUI");
+                conn.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6OCwidXNlcklkIjoiel84MDU4NTI5MyJ9.kW9xKW5q2XgAzRDT_6cj3VxlEpn4tNGCUIYCRRq0YUI");
                 conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
 
 
                 dos = new DataOutputStream(conn.getOutputStream());
-
                 dos.writeBytes(twoHyphens + boundary + lineEnd);
                 //dos.writeBytes("Content-Disposition: form-data; name=\"file\"" + getParamKeyValue("filename", "test.mp4") + getParamKeyIntValue("duration", 15) + getParamKeyValue("orientation", "portrait") + getParamKeyValue("channel", videoParams.getChannel()) + getParamKeyValue("context_resource_id", videoParams.getContextResourceId()) + getParamKeyValue("context_type", videoParams.getContextType()) + getParamKeyValue("title", videoParams.getTitle()) + getParamKeyIntValue("isPublic", videoParams.getIsPublicVideo()) + getParamKeyIntValue("isUserVideo", videoParams.getIsUserVideo()) + lineEnd);
                 dos.writeBytes("Content-Disposition: form-data; name=\"file\"" + ";filename=\"test.mp4 \"" + lineEnd);
@@ -279,7 +275,6 @@ public class VideoUploadActivity extends AppCompatActivity {
 
             //------------------ read the SERVER RESPONSE
 
-
             try {
                 inStream = new DataInputStream(conn.getInputStream());
                 String str;
@@ -302,7 +297,21 @@ public class VideoUploadActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String fileData) {
             if (fileData != null) {
+                if (progressDialog != null) {
+                    progressDialog.setTitle("Success");
+                    progressDialog.setMessage("Video Upload Successfully");
+                }
+
                 tv.setText(fileData);
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (progressDialog != null && progressDialog.isShowing()) {
+                            progressDialog.hide();
+                        }
+                    }
+                }, 500);
             }
         }
     }
@@ -339,11 +348,7 @@ public class VideoUploadActivity extends AppCompatActivity {
     private class VideoParams {
         Uri uri;
         String title;
-        String channel;
-        String contextType;
-        String contextResourceId;
-        int isPublicVideo;
-        int isUserVideo;
+        String uploadUrl;
 
         public Uri getUri() {
             return uri;
@@ -361,44 +366,12 @@ public class VideoUploadActivity extends AppCompatActivity {
             this.title = title;
         }
 
-        public String getChannel() {
-            return channel;
+        public String getUploadUrl() {
+            return uploadUrl;
         }
 
-        public void setChannel(String channel) {
-            this.channel = channel;
-        }
-
-        public String getContextType() {
-            return contextType;
-        }
-
-        public void setContextType(String contextType) {
-            this.contextType = contextType;
-        }
-
-        public String getContextResourceId() {
-            return contextResourceId;
-        }
-
-        public void setContextResourceId(String contextResourceId) {
-            this.contextResourceId = contextResourceId;
-        }
-
-        public int getIsPublicVideo() {
-            return isPublicVideo;
-        }
-
-        public void setIsPublicVideo(int isPublicVideo) {
-            this.isPublicVideo = isPublicVideo;
-        }
-
-        public int getIsUserVideo() {
-            return isUserVideo;
-        }
-
-        public void setIsUserVideo(int isUserVideo) {
-            this.isUserVideo = isUserVideo;
+        public void setUploadUrl(String uploadUrl) {
+            this.uploadUrl = uploadUrl;
         }
     }
 }

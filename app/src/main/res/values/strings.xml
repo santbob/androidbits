@@ -10,4 +10,6 @@
     <string name="chart_activity">Chart Activity</string>
     <string name="circle_activity">Circle Activity</string>
     <string name="reset_button">Reset</string>
+    <string name="upload_api_path">https://api.santhoshn.com/upload/video</string>
+    <string name="video_title_help">My Super Awesome Video</string>
 </resources>
